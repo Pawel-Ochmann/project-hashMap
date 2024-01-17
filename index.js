@@ -1,37 +1,80 @@
-var HashMap = /** @class */ (function () {
-    function HashMap() {
-        this.data = {};
+var HashTable = /** @class */ (function () {
+    function HashTable() {
+        this.table = new Array(127);
+        this.size = 0;
     }
-    HashMap.prototype.hash = function (key) {
-        var hashCode = 0;
+    HashTable.prototype._hash = function (key) {
+        var hash = 0;
         for (var i = 0; i < key.length; i++) {
-            hashCode += key.charCodeAt(i);
+            hash += key.charCodeAt(i);
         }
-        return hashCode;
+        return hash % this.table.length;
     };
-    HashMap.prototype.set = function (key, value) {
-        var hashedKey = this.hash(key);
-        this.data[hashedKey] = value;
+    HashTable.prototype.set = function (key, value) {
+        var index = this._hash(key);
+        if (this.table[index]) {
+            for (var i = 0; i < this.table[index].length; i++) {
+                // Find the key/value pair in the chain
+                if (this.table[index][i][0] === key) {
+                    this.table[index][i][1] = value;
+                    return;
+                }
+            }
+            // not found, push a new key/value pair
+            this.table[index].push([key, value]);
+        }
+        else {
+            this.table[index] = [];
+            this.table[index].push([key, value]);
+        }
+        this.size++;
     };
-    HashMap.prototype.get = function (key) {
-        var hashedKey = this.hash(key);
-        return this.data[hashedKey];
+    HashTable.prototype.get = function (key) {
+        var target = this._hash(key);
+        if (this.table[target]) {
+            for (var i = 0; i < this.table.length; i++) {
+                if (this.table[target][i][0] === key) {
+                    return this.table[target][i][1];
+                }
+            }
+        }
+        return undefined;
     };
-    HashMap.prototype.delete = function (key) {
-        var hashedKey = this.hash(key);
-        delete this.data[hashedKey];
+    HashTable.prototype.remove = function (key) {
+        var index = this._hash(key);
+        if (this.table[index] && this.table[index].length) {
+            for (var i = 0; i < this.table.length; i++) {
+                if (this.table[index][i][0] === key) {
+                    this.table[index].splice(i, 1);
+                    this.size--;
+                    return true;
+                }
+            }
+        }
+        else {
+            return false;
+        }
     };
-    HashMap.prototype.has = function (key) {
-        var hashedKey = this.hash(key);
-        return this.data.hasOwnProperty(hashedKey);
+    HashTable.prototype.display = function () {
+        this.table.forEach(function (values, index) {
+            var chainedValues = values.map(function (_a) {
+                var key = _a[0], value = _a[1];
+                return "[ ".concat(key, ": ").concat(value, " ]");
+            });
+            console.log("".concat(index, ": ").concat(chainedValues));
+        });
     };
-    return HashMap;
+    return HashTable;
 }());
-// Example usage:
-var myMap = new HashMap();
-myMap.set('one', 1);
-myMap.set('two', 2);
-console.log(myMap.get('one')); // Output: 1
-console.log(myMap.has('two')); // Output: true
-myMap.delete('one');
-console.log(myMap.get('one')); // Output: undefined
+var ht = new HashTable();
+ht.set('France', 111);
+ht.set('Spain', 150);
+ht.set('ǻ', 192);
+ht.display();
+// 83: [ France: 111 ]
+// 126: [ Spain: 150 ],[ ǻ: 192 ]
+console.log(ht.size); // 3
+ht.remove('Spain');
+ht.display();
+// 83: [ France: 111 ]
+// 126: [ ǻ: 192 ]
